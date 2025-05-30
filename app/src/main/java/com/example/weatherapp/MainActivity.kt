@@ -48,12 +48,14 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WeatherScreen(viewModel: WeatherViewModel = viewModel(factory = WeatherViewModelFactory(WeatherRepository()))) {
     var cityName by remember { mutableStateOf("") }
     val weatherState by viewModel.weatherState.collectAsState()
-    var isDarkMode by remember { mutableStateOf(isSystemInDarkTheme()) }
+
+    // Fix: Get the system theme state first, then use it in remember
+    val systemDarkTheme = isSystemInDarkTheme()
+    var isDarkMode by remember { mutableStateOf(systemDarkTheme) }
 
     // Enhanced animation states
     var isVisible by remember { mutableStateOf(false) }
@@ -322,6 +324,8 @@ fun WeatherScreen(viewModel: WeatherViewModel = viewModel(factory = WeatherViewM
                     is WeatherUiState.Error -> {
                         EnhancedErrorCard(message = state.message, isDarkMode = isDarkMode)
                     }
+
+                    WeatherUiState.Initial -> TODO()
                 }
             }
         }
