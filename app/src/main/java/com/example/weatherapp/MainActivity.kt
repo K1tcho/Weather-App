@@ -22,7 +22,6 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -34,8 +33,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.weatherapp.ui.theme.WeatherAppTheme
 import kotlinx.coroutines.delay
-import kotlin.math.cos
-import kotlin.math.sin
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -325,7 +322,10 @@ fun WeatherScreen(viewModel: WeatherViewModel = viewModel(factory = WeatherViewM
                         EnhancedErrorCard(message = state.message, isDarkMode = isDarkMode)
                     }
 
-                    WeatherUiState.Initial -> TODO()
+                    WeatherUiState.Initial -> {
+                        // Show initial loading state
+                        EnhancedLoadingAnimation(isDarkMode = isDarkMode)
+                    }
                 }
             }
         }
@@ -474,8 +474,7 @@ fun EnhancedLoadingAnimation(isDarkMode: Boolean) {
                                         Color.Transparent,
                                         Color.White.copy(alpha = 0.6f),
                                         Color.Transparent
-                                    ),
-                                    center = Offset(0.5f, 0.5f)
+                                    )
                                 )
                             )
                             .rotate(shimmer * 360f)
@@ -806,7 +805,7 @@ fun EnhancedWeatherDetailCard(
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
-            horizontalAlignment = Alignment.CenterVertically as Alignment.Horizontal
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 emoji,
