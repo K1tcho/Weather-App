@@ -59,6 +59,13 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     implementation("com.google.android.gms:play-services-location:21.0.1")
 
+    // Fix for androidx.core issues - add these dependencies
+    implementation("androidx.core:core:1.12.0")
+    implementation("androidx.core:core-ktx:1.12.0")
+
+    // Material icons extended for DarkMode and LightMode icons
+    implementation("androidx.compose.material:material-icons-extended:1.5.4")
+
     // Test dependencies
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

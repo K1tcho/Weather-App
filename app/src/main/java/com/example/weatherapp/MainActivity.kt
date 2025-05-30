@@ -13,11 +13,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,11 +22,13 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -215,7 +213,7 @@ fun WeatherScreen(viewModel: WeatherViewModel = viewModel(factory = WeatherViewM
                             isDarkMode = isDarkMode
                         ) {
                             Icon(
-                                if (darkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
+                                if (darkMode) Icons.Default.WbSunny else Icons.Default.Bedtime,
                                 contentDescription = "Toggle theme",
                                 tint = Color.White,
                                 modifier = Modifier.size(24.dp)
@@ -453,7 +451,7 @@ fun EnhancedLoadingAnimation(isDarkMode: Boolean) {
         GlassCard(isDarkMode = isDarkMode) {
             Column(
                 modifier = Modifier.padding(40.dp),
-                horizontalAlignment = Alignment.CenterVertically
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Box(
                     modifier = Modifier
@@ -473,7 +471,7 @@ fun EnhancedLoadingAnimation(isDarkMode: Boolean) {
                                         Color.White.copy(alpha = 0.6f),
                                         Color.Transparent
                                     ),
-                                    center = androidx.compose.ui.geometry.Offset(0.5f, 0.5f)
+                                    center = Offset(0.5f, 0.5f)
                                 )
                             )
                             .rotate(shimmer * 360f)
@@ -526,7 +524,7 @@ fun EnhancedErrorCard(message: String, isDarkMode: Boolean) {
     ) {
         Column(
             modifier = Modifier.padding(32.dp),
-            horizontalAlignment = Alignment.CenterVertically
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Animated error icon
             Text(
@@ -602,7 +600,7 @@ fun EnhancedWeatherContent(
             ) {
                 Column(
                     modifier = Modifier.padding(32.dp),
-                    horizontalAlignment = Alignment.CenterVertically
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     // Location with enhanced styling
                     Row(
@@ -691,14 +689,10 @@ fun EnhancedWeatherContent(
                                 initialOffsetX = { if (cardIndex == 0) -it else it },
                                 animationSpec = spring(
                                     dampingRatio = Spring.DampingRatioMediumBouncy,
-                                    stiffness = Spring.StiffnessLow,
-                                    delayMillis = (rowIndex * 2 + cardIndex) * 150
+                                    stiffness = Spring.StiffnessLow
                                 )
                             ) + fadeIn(
-                                animationSpec = tween(
-                                    800,
-                                    delayMillis = (rowIndex * 2 + cardIndex) * 150
-                                )
+                                animationSpec = tween(800)
                             ),
                             modifier = Modifier.weight(1f)
                         ) {
@@ -791,7 +785,7 @@ fun EnhancedWeatherDetailCard(
     value: String,
     emoji: String,
     isDarkMode: Boolean,
-    offset: androidx.compose.ui.unit.Dp
+    offset: Dp
 ) {
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
@@ -808,7 +802,7 @@ fun EnhancedWeatherDetailCard(
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
-            horizontalAlignment = Alignment.CenterVertically
+            horizontalAlignment = Alignment.CenterVertically as Alignment.Horizontal
         ) {
             Text(
                 emoji,
