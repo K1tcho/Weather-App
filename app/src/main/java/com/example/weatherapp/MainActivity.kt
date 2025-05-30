@@ -17,10 +17,12 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
@@ -34,6 +36,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.weatherapp.ui.theme.WeatherAppTheme
 import kotlinx.coroutines.delay
+import kotlin.math.cos
+import kotlin.math.sin
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,61 +57,104 @@ fun WeatherScreen(viewModel: WeatherViewModel = viewModel(factory = WeatherViewM
     val weatherState by viewModel.weatherState.collectAsState()
     var isDarkMode by remember { mutableStateOf(isSystemInDarkTheme()) }
 
-    // Animation states
+    // Enhanced animation states
     var isVisible by remember { mutableStateOf(false) }
     val animatedVisibilityState = animateFloatAsState(
         targetValue = if (isVisible) 1f else 0f,
-        animationSpec = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
         label = "visibility"
+    )
+
+    // Floating animation for glass cards
+    val infiniteTransition = rememberInfiniteTransition(label = "floating")
+    val floatingOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "floating"
     )
 
     // Load default weather with entrance animation
     LaunchedEffect(Unit) {
         viewModel.getWeather("London")
-        delay(300)
+        delay(500)
         isVisible = true
     }
 
-    // Dynamic gradient based on weather condition and theme
+    // Enhanced dynamic gradient based on weather condition
     val backgroundGradient = when (weatherState) {
         is WeatherUiState.Success -> {
             val condition = (weatherState as WeatherUiState.Success).weather.current.condition.text.lowercase()
             if (isDarkMode) {
                 when {
                     condition.contains("sunny") || condition.contains("clear") ->
-                        Brush.verticalGradient(listOf(Color(0xFF1A1A2E), Color(0xFF16213E)))
+                        Brush.verticalGradient(listOf(
+                            Color(0xFF0F0C29), Color(0xFF302B63), Color(0xFF24243e)
+                        ))
                     condition.contains("cloud") ->
-                        Brush.verticalGradient(listOf(Color(0xFF2C3E50), Color(0xFF34495E)))
+                        Brush.verticalGradient(listOf(
+                            Color(0xFF232526), Color(0xFF414345), Color(0xFF2C2C54)
+                        ))
                     condition.contains("rain") || condition.contains("drizzle") ->
-                        Brush.verticalGradient(listOf(Color(0xFF1B263B), Color(0xFF2A3D66)))
+                        Brush.verticalGradient(listOf(
+                            Color(0xFF0B0C10), Color(0xFF1F2833), Color(0xFF2E4057)
+                        ))
                     condition.contains("snow") ->
-                        Brush.verticalGradient(listOf(Color(0xFF0F3460), Color(0xFF16537E)))
+                        Brush.verticalGradient(listOf(
+                            Color(0xFF2E3192), Color(0xFF1BFFFF), Color(0xFF4A69BD)
+                        ))
                     condition.contains("thunder") ->
-                        Brush.verticalGradient(listOf(Color(0xFF0C0C0C), Color(0xFF1A1A1A)))
+                        Brush.verticalGradient(listOf(
+                            Color(0xFF000000), Color(0xFF434343), Color(0xFF1A1A2E)
+                        ))
                     else ->
-                        Brush.verticalGradient(listOf(Color(0xFF1A1A2E), Color(0xFF16213E)))
+                        Brush.verticalGradient(listOf(
+                            Color(0xFF1A1A2E), Color(0xFF16213E), Color(0xFF0F0C29)
+                        ))
                 }
             } else {
                 when {
                     condition.contains("sunny") || condition.contains("clear") ->
-                        Brush.verticalGradient(listOf(Color(0xFF87CEEB), Color(0xFF98D8E8)))
+                        Brush.verticalGradient(listOf(
+                            Color(0xFF4FACFE), Color(0xFF00F2FE), Color(0xFF43CBFF)
+                        ))
                     condition.contains("cloud") ->
-                        Brush.verticalGradient(listOf(Color(0xFF9E9E9E), Color(0xFFBDBDBD)))
+                        Brush.verticalGradient(listOf(
+                            Color(0xFF667eea), Color(0xFF764ba2), Color(0xFF8360c3)
+                        ))
                     condition.contains("rain") || condition.contains("drizzle") ->
-                        Brush.verticalGradient(listOf(Color(0xFF607D8B), Color(0xFF90A4AE)))
+                        Brush.verticalGradient(listOf(
+                            Color(0xFF4b6cb7), Color(0xFF182848), Color(0xFF2E4057)
+                        ))
                     condition.contains("snow") ->
-                        Brush.verticalGradient(listOf(Color(0xFFE3F2FD), Color(0xFFBBDEFB)))
+                        Brush.verticalGradient(listOf(
+                            Color(0xFFe6ddd4), Color(0xFF9BB5FF), Color(0xFF74b9ff)
+                        ))
                     condition.contains("thunder") ->
-                        Brush.verticalGradient(listOf(Color(0xFF37474F), Color(0xFF546E7A)))
+                        Brush.verticalGradient(listOf(
+                            Color(0xFF2F1B69), Color(0xFF8E44AD), Color(0xFF9b59b6)
+                        ))
                     else ->
-                        Brush.verticalGradient(listOf(Color(0xFF6200EE), Color(0xFF3700B3)))
+                        Brush.verticalGradient(listOf(
+                            Color(0xFF667eea), Color(0xFF764ba2), Color(0xFF667eea)
+                        ))
                 }
             }
         }
         else -> if (isDarkMode) {
-            Brush.verticalGradient(listOf(Color(0xFF1A1A2E), Color(0xFF16213E)))
+            Brush.verticalGradient(listOf(
+                Color(0xFF1A1A2E), Color(0xFF16213E), Color(0xFF0F0C29)
+            ))
         } else {
-            Brush.verticalGradient(listOf(Color(0xFF6200EE), Color(0xFF3700B3)))
+            Brush.verticalGradient(listOf(
+                Color(0xFF667eea), Color(0xFF764ba2), Color(0xFF667eea)
+            ))
         }
     }
 
@@ -116,6 +163,9 @@ fun WeatherScreen(viewModel: WeatherViewModel = viewModel(factory = WeatherViewM
             .fillMaxSize()
             .background(backgroundGradient)
     ) {
+        // Animated background particles
+        AnimatedBackgroundParticles(isDarkMode = isDarkMode)
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -125,70 +175,78 @@ fun WeatherScreen(viewModel: WeatherViewModel = viewModel(factory = WeatherViewM
         ) {
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Header with theme toggle
-            Row(
+            // Enhanced header with glassmorphism
+            GlassCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 20.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                isDarkMode = isDarkMode
             ) {
-                Text(
-                    "Weather",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (isDarkMode) Color.White else Color.White
-                )
-
-                AnimatedContent(
-                    targetState = isDarkMode,
-                    transitionSpec = {
-                        fadeIn(animationSpec = tween(300)) togetherWith
-                                fadeOut(animationSpec = tween(300))
-                    },
-                    label = "theme_toggle"
-                ) { darkMode ->
-                    IconButton(
-                        onClick = { isDarkMode = !isDarkMode },
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.2f))
-                    ) {
-                        Icon(
-                            if (darkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
-                            contentDescription = "Toggle theme",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            "Weather",
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
                         )
+                        Text(
+                            "Your daily forecast",
+                            fontSize = 14.sp,
+                            color = Color.White.copy(alpha = 0.7f)
+                        )
+                    }
+
+                    AnimatedContent(
+                        targetState = isDarkMode,
+                        transitionSpec = {
+                            (scaleIn() + fadeIn()) togetherWith (scaleOut() + fadeOut())
+                        },
+                        label = "theme_toggle"
+                    ) { darkMode ->
+                        GlassButton(
+                            onClick = { isDarkMode = !isDarkMode },
+                            isDarkMode = isDarkMode
+                        ) {
+                            Icon(
+                                if (darkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
+                                contentDescription = "Toggle theme",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                     }
                 }
             }
 
-            // Search Section with animation
+            // Enhanced search section with glassmorphism
             AnimatedVisibility(
                 visible = isVisible,
                 enter = slideInVertically(
                     initialOffsetY = { -it },
-                    animationSpec = tween(800, delayMillis = 200)
-                ) + fadeIn(animationSpec = tween(800, delayMillis = 200))
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
+                ) + fadeIn()
             ) {
-                Card(
+                GlassCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 32.dp),
-                    shape = RoundedCornerShape(25.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isDarkMode)
-                            Color.White.copy(alpha = 0.1f)
-                        else
-                            Color.White.copy(alpha = 0.9f)
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                        .padding(bottom = 32.dp)
+                        .offset(y = (floatingOffset * 0.5f).dp),
+                    isDarkMode = isDarkMode
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(20.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         OutlinedTextField(
@@ -197,16 +255,17 @@ fun WeatherScreen(viewModel: WeatherViewModel = viewModel(factory = WeatherViewM
                             label = {
                                 Text(
                                     "Search city",
-                                    color = if (isDarkMode) Color.White.copy(alpha = 0.7f) else Color(0xFF666666)
+                                    color = Color.White.copy(alpha = 0.7f)
                                 )
                             },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(15.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF6200EE),
-                                unfocusedBorderColor = if (isDarkMode) Color.White.copy(alpha = 0.3f) else Color(0xFFE0E0E0),
-                                focusedTextColor = if (isDarkMode) Color.White else Color.Black,
-                                unfocusedTextColor = if (isDarkMode) Color.White else Color.Black
+                                focusedBorderColor = Color.White.copy(alpha = 0.6f),
+                                unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White.copy(alpha = 0.8f),
+                                cursorColor = Color.White
                             )
                         )
                         Spacer(modifier = Modifier.width(12.dp))
@@ -217,7 +276,7 @@ fun WeatherScreen(viewModel: WeatherViewModel = viewModel(factory = WeatherViewM
                             label = "search_scale"
                         )
 
-                        FloatingActionButton(
+                        GlassButton(
                             onClick = {
                                 if (cityName.isNotBlank()) {
                                     viewModel.getWeather(cityName)
@@ -226,7 +285,7 @@ fun WeatherScreen(viewModel: WeatherViewModel = viewModel(factory = WeatherViewM
                             modifier = Modifier
                                 .size(56.dp)
                                 .scale(searchButtonScale),
-                            containerColor = Color(0xFF6200EE)
+                            isDarkMode = isDarkMode
                         ) {
                             Icon(
                                 Icons.Default.Search,
@@ -238,26 +297,32 @@ fun WeatherScreen(viewModel: WeatherViewModel = viewModel(factory = WeatherViewM
                 }
             }
 
-            // Weather Content with animations
+            // Weather Content with enhanced animations
             AnimatedContent(
                 targetState = weatherState,
                 transitionSpec = {
-                    fadeIn(animationSpec = tween(600)) + scaleIn(animationSpec = tween(600)) togetherWith
-                            fadeOut(animationSpec = tween(300)) + scaleOut(animationSpec = tween(300))
+                    (fadeIn(animationSpec = tween(800)) +
+                            scaleIn(animationSpec = tween(800))) togetherWith
+                            (fadeOut(animationSpec = tween(400)) +
+                                    scaleOut(animationSpec = tween(400)))
                 },
                 label = "weather_content"
             ) { state ->
                 when (state) {
                     is WeatherUiState.Loading -> {
-                        LoadingAnimation(isDarkMode = isDarkMode)
+                        EnhancedLoadingAnimation(isDarkMode = isDarkMode)
                     }
 
                     is WeatherUiState.Success -> {
-                        WeatherContent(weather = state.weather, isDarkMode = isDarkMode)
+                        EnhancedWeatherContent(
+                            weather = state.weather,
+                            isDarkMode = isDarkMode,
+                            floatingOffset = floatingOffset
+                        )
                     }
 
                     is WeatherUiState.Error -> {
-                        ErrorCard(message = state.message, isDarkMode = isDarkMode)
+                        EnhancedErrorCard(message = state.message, isDarkMode = isDarkMode)
                     }
                 }
             }
@@ -266,25 +331,117 @@ fun WeatherScreen(viewModel: WeatherViewModel = viewModel(factory = WeatherViewM
 }
 
 @Composable
-fun LoadingAnimation(isDarkMode: Boolean) {
-    val infiniteTransition = rememberInfiniteTransition(label = "loading")
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = LinearEasing)
-        ),
-        label = "rotation"
-    )
+fun GlassCard(
+    modifier: Modifier = Modifier,
+    isDarkMode: Boolean,
+    content: @Composable () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color.White.copy(alpha = if (isDarkMode) 0.1f else 0.2f),
+                        Color.White.copy(alpha = if (isDarkMode) 0.05f else 0.1f)
+                    )
+                )
+            )
+    ) {
+        content()
+    }
+}
 
-    val scale by infiniteTransition.animateFloat(
+@Composable
+fun GlassButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isDarkMode: Boolean,
+    content: @Composable () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.clip(CircleShape),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.White.copy(alpha = if (isDarkMode) 0.15f else 0.25f)
+        ),
+        elevation = ButtonDefaults.buttonElevation(
+            defaultElevation = 0.dp,
+            pressedElevation = 2.dp
+        )
+    ) {
+        content()
+    }
+}
+
+@Composable
+fun AnimatedBackgroundParticles(isDarkMode: Boolean) {
+    val infiniteTransition = rememberInfiniteTransition(label = "particles")
+
+    // Multiple floating particles with different speeds
+    repeat(5) { index ->
+        val offsetY by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 20f,
+            animationSpec = infiniteRepeatable(
+                animation = tween((3000 + index * 500), easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "particle_$index"
+        )
+
+        val rotation by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(
+                animation = tween((8000 + index * 1000), easing = LinearEasing)
+            ),
+            label = "particle_rotation_$index"
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .offset(
+                    x = (50 + index * 60).dp,
+                    y = (100 + index * 80 + offsetY).dp
+                )
+        ) {
+            Box(
+                modifier = Modifier
+                    .size((20 + index * 5).dp)
+                    .rotate(rotation)
+                    .clip(CircleShape)
+                    .background(
+                        Color.White.copy(alpha = if (isDarkMode) 0.05f else 0.1f)
+                    )
+                    .blur(2.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun EnhancedLoadingAnimation(isDarkMode: Boolean) {
+    val infiniteTransition = rememberInfiniteTransition(label = "loading")
+
+    val pulseScale by infiniteTransition.animateFloat(
         initialValue = 0.8f,
         targetValue = 1.2f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = FastOutSlowInEasing),
+            animation = tween(1500, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "scale"
+        label = "pulse"
+    )
+
+    val shimmer by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = LinearEasing)
+        ),
+        label = "shimmer"
     )
 
     Box(
@@ -293,38 +450,57 @@ fun LoadingAnimation(isDarkMode: Boolean) {
             .height(400.dp),
         contentAlignment = Alignment.Center
     ) {
-        Card(
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = if (isDarkMode)
-                    Color.White.copy(alpha = 0.1f)
-                else
-                    Color.White.copy(alpha = 0.9f)
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
-        ) {
+        GlassCard(isDarkMode = isDarkMode) {
             Column(
                 modifier = Modifier.padding(40.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterVertically
             ) {
                 Box(
                     modifier = Modifier
-                        .size(80.dp)
-                        .rotate(rotation)
-                        .scale(scale),
+                        .size(100.dp)
+                        .scale(pulseScale),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.fillMaxSize(),
-                        color = Color(0xFF6200EE),
-                        strokeWidth = 4.dp
+                    // Outer ring
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .background(
+                                Brush.sweepGradient(
+                                    listOf(
+                                        Color.Transparent,
+                                        Color.White.copy(alpha = 0.6f),
+                                        Color.Transparent
+                                    ),
+                                    center = androidx.compose.ui.geometry.Offset(0.5f, 0.5f)
+                                )
+                            )
+                            .rotate(shimmer * 360f)
                     )
+
+                    // Inner circle
+                    Box(
+                        modifier = Modifier
+                            .size(60.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.2f))
+                    ) {
+                        Text(
+                            "🌤️",
+                            fontSize = 24.sp,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+
+                Spacer(modifier = Modifier.height(20.dp))
+
                 Text(
-                    "Loading weather...",
+                    "Fetching weather data...",
                     fontSize = 16.sp,
-                    color = if (isDarkMode) Color.White.copy(alpha = 0.8f) else Color(0xFF666666)
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontWeight = FontWeight.Medium
                 )
             }
         }
@@ -332,62 +508,76 @@ fun LoadingAnimation(isDarkMode: Boolean) {
 }
 
 @Composable
-fun ErrorCard(message: String, isDarkMode: Boolean) {
+fun EnhancedErrorCard(message: String, isDarkMode: Boolean) {
     val shake by rememberInfiniteTransition(label = "shake").animateFloat(
-        initialValue = -2f,
-        targetValue = 2f,
+        initialValue = -3f,
+        targetValue = 3f,
         animationSpec = infiniteRepeatable(
-            animation = tween(100),
+            animation = tween(150),
             repeatMode = RepeatMode.Reverse
         )
     )
 
-    Card(
+    GlassCard(
         modifier = Modifier
             .fillMaxWidth()
             .offset(x = shake.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isDarkMode)
-                Color(0xFF4A0E0E).copy(alpha = 0.3f)
-            else
-                Color(0xFFFFEBEE)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        isDarkMode = isDarkMode
     ) {
         Column(
-            modifier = Modifier.padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.padding(32.dp),
+            horizontalAlignment = Alignment.CenterVertically
         ) {
+            // Animated error icon
             Text(
                 "⚠️",
-                fontSize = 48.sp
+                fontSize = 64.sp,
+                modifier = Modifier.scale(
+                    animateFloatAsState(
+                        targetValue = 1f,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioLowBouncy,
+                            stiffness = Spring.StiffnessLow
+                        ),
+                        label = "error_scale"
+                    ).value
+                )
             )
-            Spacer(modifier = Modifier.height(8.dp))
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             Text(
-                "Oops! Something went wrong",
-                fontSize = 18.sp,
+                "Oops! Unable to fetch weather",
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (isDarkMode) Color(0xFFFF6B6B) else Color(0xFFD32F2F)
+                color = Color.White,
+                textAlign = TextAlign.Center
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             Text(
                 message,
                 fontSize = 14.sp,
-                color = if (isDarkMode) Color.White.copy(alpha = 0.7f) else Color(0xFF666666),
+                color = Color.White.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 8.dp)
+                lineHeight = 20.sp
             )
         }
     }
 }
 
 @Composable
-fun WeatherContent(weather: WeatherResponse, isDarkMode: Boolean) {
+fun EnhancedWeatherContent(
+    weather: WeatherResponse,
+    isDarkMode: Boolean,
+    floatingOffset: Float
+) {
     var isContentVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(weather) {
         isContentVisible = false
-        delay(100)
+        delay(200)
         isContentVisible = true
     }
 
@@ -395,29 +585,26 @@ fun WeatherContent(weather: WeatherResponse, isDarkMode: Boolean) {
         visible = isContentVisible,
         enter = slideInVertically(
             initialOffsetY = { it },
-            animationSpec = tween(800)
-        ) + fadeIn(animationSpec = tween(800))
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow
+            )
+        ) + fadeIn()
     ) {
         Column {
-            // Main Weather Card with entrance animation
-            Card(
+            // Main Weather Card with enhanced glassmorphism
+            GlassCard(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 20.dp),
-                shape = RoundedCornerShape(25.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isDarkMode)
-                        Color.White.copy(alpha = 0.1f)
-                    else
-                        Color.White.copy(alpha = 0.95f)
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
+                    .padding(bottom = 24.dp)
+                    .offset(y = floatingOffset.dp),
+                isDarkMode = isDarkMode
             ) {
                 Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    modifier = Modifier.padding(32.dp),
+                    horizontalAlignment = Alignment.CenterVertically
                 ) {
-                    // Location with icon
+                    // Location with enhanced styling
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(bottom = 8.dp)
@@ -425,96 +612,109 @@ fun WeatherContent(weather: WeatherResponse, isDarkMode: Boolean) {
                         Icon(
                             Icons.Default.LocationOn,
                             contentDescription = "Location",
-                            tint = Color(0xFF6200EE),
+                            tint = Color.White.copy(alpha = 0.8f),
                             modifier = Modifier.size(20.dp)
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             "${weather.location.name}, ${weather.location.country}",
-                            fontSize = 18.sp,
+                            fontSize = 20.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = if (isDarkMode) Color.White else Color(0xFF333333)
+                            color = Color.White
                         )
                     }
 
                     Text(
                         weather.location.localtime,
                         fontSize = 14.sp,
-                        color = if (isDarkMode) Color.White.copy(alpha = 0.7f) else Color(0xFF666666),
-                        modifier = Modifier.padding(bottom = 20.dp)
+                        color = Color.White.copy(alpha = 0.7f),
+                        modifier = Modifier.padding(bottom = 24.dp)
                     )
 
-                    // Animated Weather icon
-                    AnimatedWeatherIcon(
+                    // Enhanced Weather icon with better animations
+                    EnhancedWeatherIcon(
                         condition = weather.current.condition.text,
                         isDarkMode = isDarkMode
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
-                    // Animated Temperature
+                    // Animated Temperature with better styling
                     val temperatureAnimation by animateFloatAsState(
                         targetValue = weather.current.temp_c.toFloat(),
-                        animationSpec = tween(durationMillis = 1000),
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessLow
+                        ),
                         label = "temperature"
                     )
 
                     Text(
                         "${temperatureAnimation.toInt()}°",
-                        fontSize = 72.sp,
-                        fontWeight = FontWeight.Light,
-                        color = if (isDarkMode) Color.White else Color(0xFF333333)
+                        fontSize = 80.sp,
+                        fontWeight = FontWeight.Thin,
+                        color = Color.White
                     )
 
                     Text(
                         weather.current.condition.text,
                         fontSize = 18.sp,
-                        color = if (isDarkMode) Color.White.copy(alpha = 0.8f) else Color(0xFF666666),
+                        color = Color.White.copy(alpha = 0.8f),
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
 
                     Text(
                         "Feels like ${weather.current.feelslike_c.toInt()}°C",
                         fontSize = 14.sp,
-                        color = if (isDarkMode) Color.White.copy(alpha = 0.6f) else Color(0xFF999999)
+                        color = Color.White.copy(alpha = 0.6f)
                     )
                 }
             }
 
-            // Weather Details Grid with staggered animation
+            // Enhanced Weather Details Grid
             val detailCards = listOf(
                 Triple("Humidity", "${weather.current.humidity}%", "💧"),
                 Triple("Visibility", "${weather.current.vis_km.toInt()} km", "👁️"),
                 Triple("UV Index", weather.current.uv.toInt().toString(), "☀️"),
-                Triple("Temperature", "${weather.current.temp_f.toInt()}°F", "🌡️")
+                Triple("Feels Like", "${weather.current.feelslike_c.toInt()}°C", "🌡️")
             )
 
             detailCards.chunked(2).forEachIndexed { rowIndex, rowCards ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     rowCards.forEachIndexed { cardIndex, (title, value, emoji) ->
                         AnimatedVisibility(
                             visible = isContentVisible,
                             enter = slideInHorizontally(
                                 initialOffsetX = { if (cardIndex == 0) -it else it },
-                                animationSpec = tween(600, delayMillis = (rowIndex * 2 + cardIndex) * 100)
-                            ) + fadeIn(animationSpec = tween(600, delayMillis = (rowIndex * 2 + cardIndex) * 100)),
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessLow,
+                                    delayMillis = (rowIndex * 2 + cardIndex) * 150
+                                )
+                            ) + fadeIn(
+                                animationSpec = tween(
+                                    800,
+                                    delayMillis = (rowIndex * 2 + cardIndex) * 150
+                                )
+                            ),
                             modifier = Modifier.weight(1f)
                         ) {
-                            WeatherDetailCard(
+                            EnhancedWeatherDetailCard(
                                 title = title,
                                 value = value,
                                 emoji = emoji,
-                                isDarkMode = isDarkMode
+                                isDarkMode = isDarkMode,
+                                offset = (floatingOffset * (0.3f + cardIndex * 0.1f)).dp
                             )
                         }
                     }
                 }
 
                 if (rowIndex == 0) {
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
         }
@@ -522,106 +722,117 @@ fun WeatherContent(weather: WeatherResponse, isDarkMode: Boolean) {
 }
 
 @Composable
-fun AnimatedWeatherIcon(condition: String, isDarkMode: Boolean) {
+fun EnhancedWeatherIcon(condition: String, isDarkMode: Boolean) {
     val infiniteTransition = rememberInfiniteTransition(label = "weather_icon")
 
     val rotation by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = if (condition.lowercase().contains("sunny")) 360f else 0f,
         animationSpec = infiniteRepeatable(
-            animation = tween(4000, easing = LinearEasing)
+            animation = tween(8000, easing = LinearEasing)
         ),
         label = "sun_rotation"
     )
 
     val bounce by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = 10f,
+        targetValue = 15f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = FastOutSlowInEasing),
+            animation = tween(3000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "bounce"
     )
 
+    val glow by infiniteTransition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glow"
+    )
+
     Box(
         modifier = Modifier
-            .size(100.dp)
-            .clip(CircleShape)
-            .background(
-                if (isDarkMode) {
-                    Brush.radialGradient(
-                        listOf(Color(0xFF4A90E2), Color(0xFF357ABD))
-                    )
-                } else {
-                    Brush.radialGradient(
-                        listOf(Color(0xFFFFD54F), Color(0xFFFF8F00))
-                    )
-                }
-            )
+            .size(120.dp)
             .offset(y = bounce.dp),
         contentAlignment = Alignment.Center
     ) {
+        // Glowing background effect
+        Box(
+            modifier = Modifier
+                .size(100.dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.radialGradient(
+                        listOf(
+                            Color.White.copy(alpha = 0.3f * glow),
+                            Color.White.copy(alpha = 0.1f * glow),
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
+
+        // Weather icon
         Text(
-            getWeatherEmoji(condition),
-            fontSize = 48.sp,
+            getEnhancedWeatherEmoji(condition),
+            fontSize = 64.sp,
             modifier = Modifier.rotate(rotation)
         )
     }
 }
 
 @Composable
-fun WeatherDetailCard(
+fun EnhancedWeatherDetailCard(
     title: String,
     value: String,
     emoji: String,
-    isDarkMode: Boolean
+    isDarkMode: Boolean,
+    offset: androidx.compose.ui.unit.Dp
 ) {
-    var isHovered by remember { mutableStateOf(false) }
+    var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isHovered) 1.05f else 1f,
+        targetValue = if (isPressed) 0.95f else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
         label = "card_scale"
     )
 
-    Card(
-        modifier = Modifier.scale(scale),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isDarkMode)
-                Color.White.copy(alpha = 0.1f)
-            else
-                Color.White.copy(alpha = 0.9f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+    GlassCard(
+        modifier = Modifier
+            .scale(scale)
+            .offset(y = offset),
+        isDarkMode = isDarkMode
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.padding(20.dp),
+            horizontalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 emoji,
-                fontSize = 24.sp,
-                modifier = Modifier.padding(bottom = 4.dp)
+                fontSize = 32.sp,
+                modifier = Modifier.padding(bottom = 8.dp)
             )
             Text(
                 title,
                 fontSize = 12.sp,
-                color = if (isDarkMode) Color.White.copy(alpha = 0.7f) else Color(0xFF666666),
+                color = Color.White.copy(alpha = 0.7f),
                 fontWeight = FontWeight.Medium
             )
             Text(
                 value,
-                fontSize = 16.sp,
+                fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (isDarkMode) Color.White else Color(0xFF333333),
-                modifier = Modifier.padding(top = 2.dp)
+                color = Color.White,
+                modifier = Modifier.padding(top = 4.dp)
             )
         }
     }
 }
 
-fun getWeatherEmoji(condition: String): String {
+fun getEnhancedWeatherEmoji(condition: String): String {
     return when {
         condition.lowercase().contains("sunny") || condition.lowercase().contains("clear") -> "☀️"
         condition.lowercase().contains("partly cloudy") -> "⛅"
