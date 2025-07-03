@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit
 class WeatherRepository {
     private val apiKey = "7ec5b95a0eaf160b7060dc9fcc68dede"
     private val baseUrl = "https://api.openweathermap.org/data/2.5/"
+    private val oneCallBaseUrl = "https://api.openweathermap.org/data/3.0/"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
@@ -22,6 +23,13 @@ class WeatherRepository {
 
     private val api = Retrofit.Builder()
         .baseUrl(baseUrl)
+        .client(client)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+        .create(WeatherApiService::class.java)
+
+    private val oneCallApi = Retrofit.Builder()
+        .baseUrl(oneCallBaseUrl)
         .client(client)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
@@ -85,7 +93,7 @@ class WeatherRepository {
 
     suspend fun getOneCallWeather(lat: Double, lon: Double): Result<OneCallResponse> {
         return try {
-            val response = api.getOneCallWeather(lat, lon, apiKey)
+            val response = oneCallApi.getOneCallWeather(lat, lon, apiKey)
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {

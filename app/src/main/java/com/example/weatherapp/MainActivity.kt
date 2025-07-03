@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -47,6 +48,9 @@ import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.roundToInt
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.drawscope.DrawScope
 
 class MainActivity : ComponentActivity() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -934,6 +938,8 @@ fun UltraGlassCard(
     }
 }
 
+// Complete MainActivity - Starting from UltraGlassButton composable
+
 @Composable
 fun UltraGlassButton(
     onClick: () -> Unit,
@@ -942,4 +948,275 @@ fun UltraGlassButton(
     content: @Composable () -> Unit
 ) {
     val glassColor = if (isDarkMode) {
-        Color.White.copy(alpha = 0.15f
+        Color.White.copy(alpha = 0.15f)
+    } else {
+        Color.White.copy(alpha = 0.25f)
+    }
+
+    val borderColor = if (isDarkMode) {
+        Color.White.copy(alpha = 0.3f)
+    } else {
+        Color.White.copy(alpha = 0.4f)
+    }
+
+    Button(
+        onClick = onClick,
+        modifier = modifier
+            .background(
+                glassColor,
+                CircleShape
+            )
+            .border(
+                1.dp,
+                borderColor,
+                CircleShape
+            ),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.Transparent,
+            contentColor = Color.White
+        ),
+        contentPadding = PaddingValues(0.dp),
+        shape = CircleShape
+    ) {
+        content()
+    }
+}
+
+@Composable
+fun UltraGlassTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+    isDarkMode: Boolean
+) {
+    val glassColor = if (isDarkMode) {
+        Color.White.copy(alpha = 0.15f)
+    } else {
+        Color.White.copy(alpha = 0.25f)
+    }
+
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier
+            .background(
+                glassColor,
+                RoundedCornerShape(16.dp)
+            ),
+        placeholder = {
+            Text(
+                text = placeholder,
+                color = Color.White.copy(alpha = 0.6f)
+            )
+        },
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedTextColor = Color.White,
+            unfocusedTextColor = Color.White,
+            focusedBorderColor = Color.White.copy(alpha = 0.4f),
+            unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+            cursorColor = Color.White
+        ),
+        shape = RoundedCornerShape(16.dp),
+        singleLine = true
+    )
+}
+
+@Composable
+fun WeatherIcon(
+    iconCode: String,
+    size: Dp,
+    modifier: Modifier = Modifier
+) {
+    val iconResource = when (iconCode) {
+        "01d" -> Icons.Rounded.WbSunny
+        "01n" -> Icons.Rounded.Brightness3
+        "02d", "02n" -> Icons.Rounded.WbCloudy
+        "03d", "03n", "04d", "04n" -> Icons.Rounded.Cloud
+        "09d", "09n" -> Icons.Rounded.Grain
+        "10d", "10n" -> Icons.Rounded.WaterDrop
+        "11d", "11n" -> Icons.Rounded.Thunderstorm
+        "13d", "13n" -> Icons.Rounded.AcUnit
+        "50d", "50n" -> Icons.Rounded.Foggy
+        else -> Icons.Rounded.WbSunny
+    }
+
+    Icon(
+        imageVector = iconResource,
+        contentDescription = null,
+        modifier = modifier.size(size),
+        tint = Color.White.copy(alpha = 0.9f)
+    )
+}
+
+@Composable
+fun EnhancedFloatingParticles(isDarkMode: Boolean) {
+    val particles = remember { List(20) { ParticleData() } }
+
+    particles.forEach { particle ->
+        val infiniteTransition = rememberInfiniteTransition(label = "particle_${particle.id}")
+
+        val offsetY by infiniteTransition.animateFloat(
+            initialValue = particle.startY,
+            targetValue = particle.endY,
+            animationSpec = infiniteRepeatable(
+                animation = tween(particle.duration, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "particle_y"
+        )
+
+        val offsetX by infiniteTransition.animateFloat(
+            initialValue = particle.startX,
+            targetValue = particle.endX,
+            animationSpec = infiniteRepeatable(
+                animation = tween(particle.duration, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "particle_x"
+        )
+
+        Box(
+            modifier = Modifier
+                .offset(x = offsetX.dp, y = offsetY.dp)
+                .size(particle.size.dp)
+                .background(
+                    Color.White.copy(alpha = particle.alpha),
+                    CircleShape
+                )
+                .blur(1.dp)
+        )
+    }
+}
+
+@Composable
+fun WeatherAuroraEffect(
+    weatherState: WeatherUiState,
+    isDarkMode: Boolean
+) {
+    val auroraColors = when (weatherState) {
+        is WeatherUiState.Success -> {
+            when (weatherState.weather.weather.firstOrNull()?.main) {
+                "Rain" -> listOf(Color.Blue, Color.Cyan, Color.White)
+                "Snow" -> listOf(Color.White, Color.Blue, Color.Cyan)
+                "Clouds" -> listOf(Color.Gray, Color.White, Color.LightGray)
+                "Clear" -> listOf(Color.Yellow, Color.Orange, Color.Red)
+                else -> listOf(Color.Blue, Color.Purple, Color.Pink)
+            }
+        }
+        else -> listOf(Color.Blue, Color.Purple, Color.Pink)
+    }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "aurora")
+    val auroraShift by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(15000, easing = LinearEasing)
+        ),
+        label = "aurora_shift"
+    )
+
+    Canvas(
+        modifier = Modifier
+            .fillMaxSize()
+            .blur(50.dp)
+    ) {
+        val gradient = Brush.linearGradient(
+            colors = auroraColors,
+            start = Offset(0f, size.height * auroraShift),
+            end = Offset(size.width, size.height * (1f - auroraShift))
+        )
+
+        drawRect(
+            brush = gradient,
+            alpha = 0.1f
+        )
+    }
+}
+
+// Helper functions
+fun createDynamicGradient(
+    weatherState: WeatherUiState,
+    isDarkMode: Boolean,
+    backgroundShift: Float
+): Brush {
+    val baseColors = when (weatherState) {
+        is WeatherUiState.Success -> {
+            when (weatherState.weather.weather.firstOrNull()?.main) {
+                "Rain" -> if (isDarkMode) {
+                    listOf(Color(0xFF0D47A1), Color(0xFF1976D2), Color(0xFF42A5F5))
+                } else {
+                    listOf(Color(0xFF1976D2), Color(0xFF42A5F5), Color(0xFF90CAF9))
+                }
+                "Snow" -> if (isDarkMode) {
+                    listOf(Color(0xFF263238), Color(0xFF455A64), Color(0xFF78909C))
+                } else {
+                    listOf(Color(0xFF455A64), Color(0xFF78909C), Color(0xFFB0BEC5))
+                }
+                "Clouds" -> if (isDarkMode) {
+                    listOf(Color(0xFF37474F), Color(0xFF546E7A), Color(0xFF90A4AE))
+                } else {
+                    listOf(Color(0xFF546E7A), Color(0xFF90A4AE), Color(0xFFCFD8DC))
+                }
+                "Clear" -> if (isDarkMode) {
+                    listOf(Color(0xFF0D47A1), Color(0xFF1565C0), Color(0xFF1976D2))
+                } else {
+                    listOf(Color(0xFF1565C0), Color(0xFF1976D2), Color(0xFF42A5F5))
+                }
+                else -> if (isDarkMode) {
+                    listOf(Color(0xFF1A237E), Color(0xFF283593), Color(0xFF3F51B5))
+                } else {
+                    listOf(Color(0xFF283593), Color(0xFF3F51B5), Color(0xFF5C6BC0))
+                }
+            }
+        }
+        else -> if (isDarkMode) {
+            listOf(Color(0xFF1A237E), Color(0xFF283593), Color(0xFF3F51B5))
+        } else {
+            listOf(Color(0xFF283593), Color(0xFF3F51B5), Color(0xFF5C6BC0))
+        }
+    }
+
+    return Brush.linearGradient(
+        colors = baseColors,
+        start = Offset(0f, 0f),
+        end = Offset(1000f * backgroundShift, 1000f * (1f - backgroundShift))
+    )
+}
+
+fun formatTime(timestamp: Long, timezoneOffset: Int): String {
+    val date = Date((timestamp + timezoneOffset) * 1000)
+    val formatter = SimpleDateFormat("HH:mm", Locale.getDefault())
+    return formatter.format(date)
+}
+
+fun formatHour(timestamp: Long): String {
+    val date = Date(timestamp * 1000)
+    val formatter = SimpleDateFormat("HH:mm", Locale.getDefault())
+    return formatter.format(date)
+}
+
+fun formatDay(timestamp: Long): String {
+    val date = Date(timestamp * 1000)
+    val formatter = SimpleDateFormat("EEE", Locale.getDefault())
+    return formatter.format(date)
+}
+
+// Data classes
+data class WeatherDetail(
+    val label: String,
+    val value: String,
+    val icon: ImageVector
+)
+
+data class ParticleData(
+    val id: Int = (0..1000).random(),
+    val startX: Float = (0..400).random().toFloat(),
+    val startY: Float = (0..800).random().toFloat(),
+    val endX: Float = (0..400).random().toFloat(),
+    val endY: Float = (0..800).random().toFloat(),
+    val size: Float = (2..8).random().toFloat(),
+    val alpha: Float = (0.1f..0.3f).random(),
+    val duration: Int = (8000..15000).random()
+)
