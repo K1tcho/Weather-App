@@ -365,3 +365,581 @@ fun EnhancedSearchSection(
                 dampingRatio = Spring.DampingRatioMediumBouncy,
                 stiffness = Spring.StiffnessLow
             )
+        ) + fadeIn(animationSpec = tween(1000))
+    ) {
+        UltraGlassCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset(y = floatingOffset.dp)
+                .padding(bottom = 32.dp),
+            isDarkMode = isDarkMode,
+            glowIntensity = 0.6f
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                UltraGlassTextField(
+                    value = cityName,
+                    onValueChange = onCityNameChange,
+                    placeholder = "Enter city name...",
+                    modifier = Modifier.weight(1f),
+                    isDarkMode = isDarkMode
+                )
+
+                UltraGlassButton(
+                    onClick = onSearch,
+                    isDarkMode = isDarkMode,
+                    modifier = Modifier.size(56.dp)
+                ) {
+                    Icon(
+                        Icons.Rounded.Search,
+                        contentDescription = "Search",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun UltraModernWeatherContent(
+    weather: CurrentWeatherResponse,
+    detailedWeather: DetailedWeatherUiState,
+    isDarkMode: Boolean
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        // Main weather card
+        MainWeatherCard(weather = weather, isDarkMode = isDarkMode)
+
+        // Detailed info cards
+        DetailedWeatherInfoCards(weather = weather, isDarkMode = isDarkMode)
+
+        // Hourly forecast
+        when (detailedWeather) {
+            is DetailedWeatherUiState.Success -> {
+                HourlyForecastCard(
+                    hourlyWeather = detailedWeather.weather.hourly.take(24),
+                    isDarkMode = isDarkMode
+                )
+
+                // Daily forecast
+                DailyForecastCard(
+                    dailyWeather = detailedWeather.weather.daily.take(7),
+                    isDarkMode = isDarkMode
+                )
+            }
+            is DetailedWeatherUiState.Loading -> {
+                UltraGlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    isDarkMode = isDarkMode
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = Color.White.copy(alpha = 0.8f)
+                        )
+                    }
+                }
+            }
+            else -> {}
+        }
+    }
+}
+
+@Composable
+fun MainWeatherCard(
+    weather: CurrentWeatherResponse,
+    isDarkMode: Boolean
+) {
+    UltraGlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        isDarkMode = isDarkMode,
+        glowIntensity = 1.0f
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // City name and coordinates
+            Text(
+                text = weather.name,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Light,
+                color = Color.White,
+                letterSpacing = 1.sp
+            )
+
+            Text(
+                text = "${weather.coord.lat.roundToInt()}°, ${weather.coord.lon.roundToInt()}°",
+                fontSize = 14.sp,
+                color = Color.White.copy(alpha = 0.7f),
+                fontWeight = FontWeight.Light
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Weather icon and temperature
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                WeatherIcon(
+                    iconCode = weather.weather.firstOrNull()?.icon ?: "01d",
+                    size = 80.dp
+                )
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column(
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text(
+                        text = "${weather.main.temp.roundToInt()}°C",
+                        fontSize = 64.sp,
+                        fontWeight = FontWeight.ExtraLight,
+                        color = Color.White
+                    )
+
+                    Text(
+                        text = "Feels like ${weather.main.feelsLike.roundToInt()}°C",
+                        fontSize = 16.sp,
+                        color = Color.White.copy(alpha = 0.7f)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Weather description
+            Text(
+                text = weather.weather.firstOrNull()?.description?.replaceFirstChar {
+                    if (it.isLowerCase()) it.titlecase() else it.toString()
+                } ?: "Unknown",
+                fontSize = 18.sp,
+                color = Color.White.copy(alpha = 0.8f),
+                fontWeight = FontWeight.Light
+            )
+        }
+    }
+}
+
+@Composable
+fun DetailedWeatherInfoCards(
+    weather: CurrentWeatherResponse,
+    isDarkMode: Boolean
+) {
+    val weatherDetails = listOf(
+        WeatherDetail("Humidity", "${weather.main.humidity}%", Icons.Rounded.WaterDrop),
+        WeatherDetail("Pressure", "${weather.main.pressure} hPa", Icons.Rounded.Speed),
+        WeatherDetail("Wind Speed", "${weather.wind.speed} m/s", Icons.Rounded.Air),
+        WeatherDetail("Visibility", "${weather.visibility / 1000} km", Icons.Rounded.Visibility),
+        WeatherDetail("Clouds", "${weather.clouds.all}%", Icons.Rounded.Cloud),
+        WeatherDetail("Sunrise", formatTime(weather.sys.sunrise, weather.timezone), Icons.Rounded.WbSunny),
+        WeatherDetail("Sunset", formatTime(weather.sys.sunset, weather.timezone), Icons.Rounded.Brightness3)
+    )
+
+    LazyRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(horizontal = 4.dp)
+    ) {
+        items(weatherDetails) { detail ->
+            WeatherDetailCard(
+                detail = detail,
+                isDarkMode = isDarkMode
+            )
+        }
+    }
+}
+
+@Composable
+fun WeatherDetailCard(
+    detail: WeatherDetail,
+    isDarkMode: Boolean
+) {
+    UltraGlassCard(
+        modifier = Modifier.width(120.dp),
+        isDarkMode = isDarkMode,
+        glowIntensity = 0.4f
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = detail.icon,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.8f),
+                modifier = Modifier.size(24.dp)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = detail.value,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.White,
+                textAlign = TextAlign.Center
+            )
+
+            Text(
+                text = detail.label,
+                fontSize = 12.sp,
+                color = Color.White.copy(alpha = 0.6f),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+fun HourlyForecastCard(
+    hourlyWeather: List<HourlyWeather>,
+    isDarkMode: Boolean
+) {
+    UltraGlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        isDarkMode = isDarkMode,
+        glowIntensity = 0.6f
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
+            Text(
+                text = "Next 24 Hours",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.White,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp)
+            ) {
+                items(hourlyWeather) { hour ->
+                    HourlyWeatherItem(
+                        hourlyWeather = hour,
+                        isDarkMode = isDarkMode
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun HourlyWeatherItem(
+    hourlyWeather: HourlyWeather,
+    isDarkMode: Boolean
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .padding(8.dp)
+            .background(
+                Color.White.copy(alpha = 0.1f),
+                RoundedCornerShape(12.dp)
+            )
+            .padding(12.dp)
+    ) {
+        Text(
+            text = formatHour(hourlyWeather.dt),
+            fontSize = 12.sp,
+            color = Color.White.copy(alpha = 0.7f)
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        WeatherIcon(
+            iconCode = hourlyWeather.weather.firstOrNull()?.icon ?: "01d",
+            size = 32.dp
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "${hourlyWeather.temp.roundToInt()}°",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color.White
+        )
+
+        if (hourlyWeather.pop > 0) {
+            Text(
+                text = "${(hourlyWeather.pop * 100).roundToInt()}%",
+                fontSize = 10.sp,
+                color = Color.Cyan.copy(alpha = 0.8f)
+            )
+        }
+    }
+}
+
+@Composable
+fun DailyForecastCard(
+    dailyWeather: List<DailyWeather>,
+    isDarkMode: Boolean
+) {
+    UltraGlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        isDarkMode = isDarkMode,
+        glowIntensity = 0.6f
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
+            Text(
+                text = "7-Day Forecast",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.White,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                dailyWeather.forEach { day ->
+                    DailyWeatherItem(
+                        dailyWeather = day,
+                        isDarkMode = isDarkMode
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DailyWeatherItem(
+    dailyWeather: DailyWeather,
+    isDarkMode: Boolean
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                Color.White.copy(alpha = 0.1f),
+                RoundedCornerShape(12.dp)
+            )
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = formatDay(dailyWeather.dt),
+            fontSize = 16.sp,
+            color = Color.White,
+            modifier = Modifier.weight(1f)
+        )
+
+        WeatherIcon(
+            iconCode = dailyWeather.weather.firstOrNull()?.icon ?: "01d",
+            size = 32.dp
+        )
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "${dailyWeather.temp.max.roundToInt()}°",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.White
+            )
+
+            Text(
+                text = " / ${dailyWeather.temp.min.roundToInt()}°",
+                fontSize = 16.sp,
+                color = Color.White.copy(alpha = 0.6f)
+            )
+        }
+    }
+}
+
+@Composable
+fun UltraModernLoadingScreen(isDarkMode: Boolean) {
+    UltraGlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        isDarkMode = isDarkMode,
+        glowIntensity = 0.8f
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(48.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            val infiniteTransition = rememberInfiniteTransition(label = "loading")
+            val rotation by infiniteTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = 360f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(2000, easing = LinearEasing)
+                ),
+                label = "loading_rotation"
+            )
+
+            Icon(
+                Icons.Rounded.Cloud,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.8f),
+                modifier = Modifier
+                    .size(64.dp)
+                    .rotate(rotation)
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Loading weather data...",
+                fontSize = 18.sp,
+                color = Color.White.copy(alpha = 0.8f),
+                fontWeight = FontWeight.Light
+            )
+        }
+    }
+}
+
+@Composable
+fun UltraModernErrorScreen(
+    message: String,
+    isDarkMode: Boolean
+) {
+    UltraGlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        isDarkMode = isDarkMode,
+        glowIntensity = 0.6f
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                Icons.Rounded.Error,
+                contentDescription = null,
+                tint = Color.Red.copy(alpha = 0.8f),
+                modifier = Modifier.size(48.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Oops!",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Light,
+                color = Color.White
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = message,
+                fontSize = 16.sp,
+                color = Color.White.copy(alpha = 0.8f),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+fun LocationRequestScreen(isDarkMode: Boolean) {
+    UltraGlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        isDarkMode = isDarkMode,
+        glowIntensity = 0.8f
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                Icons.Rounded.LocationOn,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.8f),
+                modifier = Modifier.size(48.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Getting your location...",
+                fontSize = 18.sp,
+                color = Color.White.copy(alpha = 0.8f),
+                fontWeight = FontWeight.Light,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+// Custom Glass Components
+@Composable
+fun UltraGlassCard(
+    modifier: Modifier = Modifier,
+    isDarkMode: Boolean,
+    glowIntensity: Float = 0.6f,
+    content: @Composable () -> Unit
+) {
+    val glassColor = if (isDarkMode) {
+        Color.White.copy(alpha = 0.1f)
+    } else {
+        Color.White.copy(alpha = 0.2f)
+    }
+
+    val borderColor = if (isDarkMode) {
+        Color.White.copy(alpha = 0.2f)
+    } else {
+        Color.White.copy(alpha = 0.3f)
+    }
+
+    Box(
+        modifier = modifier
+            .background(
+                glassColor,
+                RoundedCornerShape(24.dp)
+            )
+            .border(
+                1.dp,
+                borderColor,
+                RoundedCornerShape(24.dp)
+            )
+    ) {
+        content()
+    }
+}
+
+@Composable
+fun UltraGlassButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isDarkMode: Boolean,
+    content: @Composable () -> Unit
+) {
+    val glassColor = if (isDarkMode) {
+        Color.White.copy(alpha = 0.15f
